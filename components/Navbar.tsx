@@ -26,10 +26,10 @@ const Navbar = () => {
             <div className="wrapper navbar-height py-4 flex justify-between items-center">
                 <Link href="/" className="flex gap-0.5 items-center">
                     <Image src="/assets/logo.png" alt="Bookfied" width={42} height={26} />
-                    <span className="logo-text ml-2">Bookified</span>
+                    <span className="text-lg font-semibold ml-2 hidden sm:block">Bookified</span>
                 </Link>
 
-                <nav className="w-fit flex gap-7.5 items-center">
+                <nav className="w-fit flex gap-4 sm:gap-7.5 items-center">
                     {navItems.map(({ label, href }) => {
                         const isActive = pathName === href || (href !== '/' && pathName.startsWith(href));
 
@@ -43,18 +43,18 @@ const Navbar = () => {
                     <div className="flex gap-7.5 items-center">
                         <Show when="signed-out">
                             <SignInButton mode="modal">
-                            <button>Sign In</button>
+                                <button>Sign In</button>
                             </SignInButton>
                         </Show>
 
                         <Show when="signed-in">
                             <div className="nav-user-link">
-                            <UserButton />
-                            {user?.firstName && (
-                                <Link href="/subscriptions" className="nav-user-name">
-                                {user.firstName}
-                                </Link>
-                            )}
+                                <UserButton />
+                                {user?.firstName && (
+                                    <Link href="/subscriptions" className="nav-user-name">
+                                        {user.firstName}
+                                    </Link>
+                                )}
                             </div>
                         </Show>
                         </div>
