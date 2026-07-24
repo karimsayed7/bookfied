@@ -9,13 +9,13 @@ const HeroSection = () => {
                 <div className="library-hero-content">
                     {/* Left Part */}
                     <div className="library-hero-text">
-                        <h1 className="library-hero-title text-4xl font-serif font-bold">Your Library</h1>
+                        <h1 className="text-[23px] font-serif font-bold">Your Library</h1>
                         <p className="library-hero-description">
                             Convert your books into interactive AI conversations. <br className="hidden md:block" />
                             Listen, learn, and discuss your favorite reads.
                         </p>
-                        <Link href="/books/new" className="library-cta-primary mt-4 flex items-center justify-center">
-                            <span className="text-3xl font-light mb-1 mr-2">+</span>
+                        <Link href="/books/new" className="bg-white hover:bg-amber-50 px-4 py-1 font-semibold rounded-lg mt-4 flex items-center justify-center">
+                            <span className="text-2xl font-semibold mb-1 mr-2">+</span>
                             <span className="text-[#212a3b]">Add new book</span>
                         </Link>
                     </div>
@@ -25,8 +25,8 @@ const HeroSection = () => {
                         <Image
                             src="/assets/hero-illustration.png"
                             alt="Vintage books and a globe"
-                            width={400}
-                            height={400}
+                            width={300}
+                            height={300}
                             className="object-contain"
                         />
                     </div>
