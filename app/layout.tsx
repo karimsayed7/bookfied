@@ -36,7 +36,7 @@ export default function RootLayout({
     <ClerkProvider>
         <html lang="en" className={cn("font-sans", geist.variable)}>
           <body
-            className={`${ibmPlexSerif.variable} ${monaSans.variable} relative font-sans antialiased`}
+            className={`${ibmPlexSerif.variable} ${monaSans.variable} relative font-sans antialiased bg-(--bg-primary)`}
           >
             <Navbar />
             {children}
