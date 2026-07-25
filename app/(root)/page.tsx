@@ -2,14 +2,15 @@ import React from 'react'
 import HeroSection from "@/components/HeroSection";
 import BookCard from '@/components/BookCard';
 import { sampleBooks } from '@/lib/constants';
-// import {getAllBooks} from "@/lib/actions/book.actions";
+import {getAllBooks} from "@/lib/actions/book.actions";
 // import Search from "@/components/Search";
 
+export const dynamic = 'force-dynamic';
 const Page = async ({ searchParams }: { searchParams: Promise<{ query?: string }> }) => {
-    // const { query } = await searchParams;
+    const { query } = await searchParams;
 
-    // const bookResults = await getAllBooks(query)
-    // const books = bookResults.success ? bookResults.data ?? [] : []
+    const bookResults = await getAllBooks(query)
+    const books = bookResults.success ? bookResults.data ?? [] : []
 
     return (
         <main className="wrapper container bg-(--bg-primary)">
@@ -21,7 +22,7 @@ const Page = async ({ searchParams }: { searchParams: Promise<{ query?: string }
             </div>
 
             <div className="library-books-grid px-5">
-                {sampleBooks.map((book) => (
+                {books.map((book) => (
                     <BookCard key={book._id} title={book.title} author={book.author} coverURL={book.coverURL} slug={book.slug} />
                 ))}
             </div>
