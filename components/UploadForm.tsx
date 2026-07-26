@@ -111,9 +111,9 @@ const UploadForm = () => {
             if(!book.success) {
                 const message = typeof book.error === 'string' ? book.error : 'Failed to create book';
                 toast.error(message);
-                // if (book.isBillingError) {
-                //     router.push("/subscriptions");
-                // }
+                if (book.isBillingError) {
+                    router.push("/subscriptions");
+                }
                 return;
             }
 
