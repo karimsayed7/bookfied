@@ -175,7 +175,7 @@ export function useVapi(book: IBook) {
                 }
             },
 
-            error: (error: Error) => {
+            error: (error: unknown) => {
                 console.error('Vapi error:', error);
                 // Don't reset isStoppingRef here - delayed events may still fire
                 setStatus('idle');
@@ -196,15 +196,39 @@ export function useVapi(book: IBook) {
                     sessionIdRef.current = null;
                 }
 
-                // Show user-friendly error message
-                const errorMessage = error.message?.toLowerCase() || '';
-                if (errorMessage.includes('timeout') || errorMessage.includes('silence')) {
-                    setLimitError('Session ended due to inactivity. Click the mic to start again.');
-                } else if (errorMessage.includes('network') || errorMessage.includes('connection')) {
-                    setLimitError('Connection lost. Please check your internet and try again.');
+                // Vapi/Daily errors arrive in unpredictable nested shapes, so instead of
+                // chasing specific property paths, stringify the whole object and match
+                // on keywords. Errors don't serialize their own message/stack via
+                // JSON.stringify, so handle the plain Error case separately first.
+                let combined = '';
+                if (error instanceof Error) {
+                    combined = error.message.toLowerCase();
                 } else {
-                    setLimitError('Session ended unexpectedly. Click the mic to start again.');
+                    try {
+                        combined = JSON.stringify(error).toLowerCase();
+                    } catch {
+                        combined = '';
+                    }
                 }
+
+                let friendlyMessage: string;
+                if (combined.includes('silence') || combined.includes('inactivity')) {
+                    friendlyMessage =
+                        "Session ended: the call went quiet for too long. Please don't leave more than a minute of silence during the conversation — click the mic to start again.";
+                } else if (combined.includes('eject')) {
+                    friendlyMessage = 'The session was interrupted and ended unexpectedly. Please try again.';
+                } else if (combined.includes('timeout')) {
+                    friendlyMessage = 'Session ended due to inactivity. Click the mic to start again.';
+                } else if (combined.includes('network') || combined.includes('connection')) {
+                    friendlyMessage = 'Connection lost. Please check your internet and try again.';
+                } else {
+                    friendlyMessage = 'Session ended unexpectedly. Click the mic to start again.';
+                }
+
+                // Note: don't call toast.error() here — VapiControls already
+                // shows a toast (and redirects) whenever limitError changes.
+                // Calling it here too would show the message twice.
+                setLimitError(friendlyMessage);
 
                 startTimeRef.current = null;
             },
