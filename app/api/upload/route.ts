@@ -11,7 +11,18 @@ export async function POST(request: Request): Promise<NextResponse> {
             body,
             request,
             onBeforeGenerateToken: async () => {
-                const { userId } = await auth();
+                let userId: string | null = null;
+                try {
+                    const authResult = await auth();
+                    userId = authResult.userId;
+                } catch (authError) {
+                    // Surface auth() failures distinctly from a missing userId,
+                    // since both were previously indistinguishable in the logs.
+                    console.error('auth() threw inside onBeforeGenerateToken:', authError);
+                    throw new Error(
+                        `AuthCheckFailed: ${authError instanceof Error ? authError.message : String(authError)}`,
+                    );
+                }
 
                 if(!userId) {
                     throw new Error('Unauthorized: User not authenticated');
@@ -39,7 +50,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         const message = e instanceof Error ? e.message : "An unknown error occurred";
         const status = message.includes('Unauthorized') ? 401 : 500;
         console.error('Upload error', e);
-        const clientMessage = status === 401 ? 'Unauthorized' : 'Upload failed';
+        // TEMP: return the real error message to the client so we can diagnose
+        // the production 500 without needing direct access to Vercel's log UI.
+        // Revert this to a generic 'Upload failed' message once the root cause
+        // is confirmed and fixed — never ship raw internal error text long-term.
+        const clientMessage = status === 401 ? 'Unauthorized' : `Upload failed: ${message}`;
         return NextResponse.json({ error: clientMessage }, { status });
     }
 }
