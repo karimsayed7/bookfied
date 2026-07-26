@@ -10,7 +10,6 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { ASSISTANT_ID, DEFAULT_VOICE, VOICE_SETTINGS } from '@/lib/constants';
 import { getVoice } from '@/lib/utils';
 import { IBook, Messages } from '@/types';
-// import { startVoiceSession, endVoiceSession } from '@/lib/actions/session.actions';
 import { startVoiceSession, endVoiceSession } from '@/lib/actions/session.actions';
 
 export function useLatestRef<T>(value: T) {
@@ -58,8 +57,13 @@ export function useVapi(book: IBook) {
     const sessionIdRef = useRef<string | null>(null);
     const isStoppingRef = useRef(false);
 
+    // Single source of truth for the session's max duration (in seconds).
+    // TODO: confirm the correct property name on `limits` (maxDurationPerSession vs maxSessionMinutes)
+    const maxDurationSeconds = limits?.maxDurationPerSession
+        ? limits.maxDurationPerSession * SECONDS_PER_MINUTE
+        : 15 * SECONDS_PER_MINUTE;
+
     // Keep refs in sync with latest values for use in callbacks
-    const maxDurationSeconds = limits?.maxDurationPerSession ? limits.maxDurationPerSession * 60 : (15 * 60);
     const maxDurationRef = useLatestRef(maxDurationSeconds);
     const durationRef = useLatestRef(duration);
     const voice = book.persona || DEFAULT_VOICE;
@@ -251,7 +255,7 @@ export function useVapi(book: IBook) {
 
             sessionIdRef.current = result.sessionId || null;
             // Note: Server-returned maxDurationMinutes is informational only
-            // The actual limit is enforced by useLatestRef(limits.maxSessionMinutes * 60)
+            // The actual limit is enforced client-side via maxDurationRef
 
             const firstMessage = `Hey, good to meet you. Quick question before we dive in - have you actually read ${book.title} yet, or are we starting fresh?`;
 
@@ -295,11 +299,10 @@ export function useVapi(book: IBook) {
         status === 'thinking' ||
         status === 'speaking';
 
-    // Calculate remaining time
-    // const maxDurationSeconds = limits.maxSessionMinutes * SECONDS_PER_MINUTE;
-    // const remainingSeconds = Math.max(0, maxDurationSeconds - duration);
-    // const showTimeWarning =
-    //     isActive && remainingSeconds <= TIME_WARNING_THRESHOLD && remainingSeconds > 0;
+    // Calculate remaining time using the single maxDurationSeconds defined above
+    const remainingSeconds = Math.max(0, maxDurationSeconds - duration);
+    const showTimeWarning =
+        isActive && remainingSeconds <= TIME_WARNING_THRESHOLD && remainingSeconds > 0;
 
     return {
         status,
@@ -314,9 +317,8 @@ export function useVapi(book: IBook) {
         isBillingError,
         maxDurationSeconds,
         clearError,
-        // maxDurationSeconds,
-        // remainingSeconds,
-        // showTimeWarning,
+        remainingSeconds,
+        showTimeWarning,
     };
 }
 

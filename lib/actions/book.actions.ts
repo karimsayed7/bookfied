@@ -6,29 +6,24 @@ import {escapeRegex, generateSlug, serializeData} from "@/lib/utils";
 import Book from "@/database/models/book.model";
 import BookSegment from "@/database/models/book-segment.model";
 import mongoose from "mongoose";
-// import {getUserPlan} from "@/lib/subscription.server";
+import { getUserPlan } from "../subscription-server";
 
-// Normalizes any thrown value into a plain, serializable string.
-// Never return raw Error objects from a Server Action — they aren't
-// safely serializable across the RSC boundary and break client rendering.
 const toErrorMessage = (e: unknown): string =>
     e instanceof Error ? e.message : String(e);
 
-export const getAllBooks = async (search?: string) => {
+export const getAllBooks = async (userId: string, search?: string) => {
     try {
         await connectToDatabase();
 
-        let query = {};
+        const query: Record<string, unknown> = { clerkId: userId };
 
         if (search) {
             const escapedSearch = escapeRegex(search);
             const regex = new RegExp(escapedSearch, 'i');
-            query = {
-                $or: [
-                    { title: { $regex: regex } },
-                    { author: { $regex: regex } },
-                ]
-            };
+            query.$or = [
+                { title: { $regex: regex } },
+                { author: { $regex: regex } },
+            ];
         }
 
         const books = await Book.find(query).sort({ createdAt: -1 }).lean();
@@ -88,8 +83,8 @@ export const createBook = async (data: CreateBook) => {
         }
 
         // Todo: Check subscription limits before creating a book
-        // const { getUserPlan } = await import("@/lib/subscription.server");
-        // const { PLAN_LIMITS } = await import("@/lib/subscription-constants");
+        const { getUserPlan } = await import("@/lib/subscription-server");
+        const { PLAN_LIMITS } = await import("@/lib/subscription-constants");
 
         const { auth } = await import("@clerk/nextjs/server");
         const { userId } = await auth();
@@ -98,21 +93,21 @@ export const createBook = async (data: CreateBook) => {
             return { success: false, error: "Unauthorized" };
         }
 
-        // const plan = await getUserPlan();
-        // const limits = PLAN_LIMITS[plan];
+        const plan = await getUserPlan();
+        const limits = PLAN_LIMITS[plan];
 
         const bookCount = await Book.countDocuments({ clerkId: userId });
 
-        // if (bookCount >= limits.maxBooks) {
-        //     const { revalidatePath } = await import("next/cache");
-        //     revalidatePath("/");
+        if (bookCount >= limits.maxBooks) {
+            const { revalidatePath } = await import("next/cache");
+            revalidatePath("/");
 
-        //     return {
-        //         success: false,
-        //         error: `You have reached the maximum number of books allowed for your ${plan} plan (${limits.maxBooks}). Please upgrade to add more books.`,
-        //         isBillingError: true,
-        //     };
-        // }
+            return {
+                success: false,
+                error: `You have reached the maximum number of books allowed for your ${plan} plan (${limits.maxBooks}). Please upgrade to add more books.`,
+                isBillingError: true,
+            };
+        }
 
         const book = await Book.create({...data, clerkId: userId, slug, totalSegments: 0});
 
